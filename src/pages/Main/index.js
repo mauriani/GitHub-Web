@@ -1,45 +1,103 @@
 import React, { Component } from 'react';
-import { FaGithubAlt, FaPlus } from 'react-icons/fa';
+import { FaGithubAlt, FaPlus, FaSpinner } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
-import { Container, Form, SubmitButton } from './styles';
+import api from '../../services/api';
+import Container from '../../components/Container';
+
+import { Form, SubmitButton, List } from './styles';
 
 export default class Main extends Component {
   constructor(props) {
     super(props);
     this.state = {
       newRepo: '',
+      repositories: [],
+      loading: false,
     };
+  }
+
+  // Carregar os dados do localStorage
+  componentDidMount() {
+    const repositories = localStorage.getItem('repositories');
+
+    if (repositories) {
+      this.setState({
+        repositories: JSON.parse(repositories),
+      });
+    }
+  }
+
+  // salvar os dados no localStorage
+
+  componentDidUpdate(_, prevState) {
+    const { repositories } = this.state;
+    if (prevState.repositories !== repositories) {
+      localStorage.setItem('repositories', JSON.stringify(repositories));
+    }
   }
 
   handleInputChange = (e) => {
     this.setState({ newRepo: e.target.value });
   };
 
-  handleSubmit = (e) => {
-    const { newRepo } = this.state;
+  // como o metodo pode demorar um pouco, adicionamos o async e await
+  handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(newRepo);
+
+    this.setState({
+      loading: true,
+    });
+
+    const { newRepo, repositories } = this.state;
+
+    const response = await api.get(`/repos/${newRepo}`);
+    const data = {
+      name: response.data.full_name,
+    };
+    this.setState({
+      // copio tudo que tem nela e adiciono o novo data, ou seja ele mantem a  listagem atual e adiciona o nova informação
+      // nesse caso usamos o conceito de imutabilidade do react (criando um novo vetor)
+      repositories: [...repositories, data],
+      newRepo: '',
+      loading: false,
+    });
   };
 
   render() {
-    const { newRepo } = this.state;
+    const { newRepo, loading, repositories } = this.state;
+
     return (
       <Container>
         <h1>
           <FaGithubAlt />
           Repositórios
         </h1>
-        <Form onSubmit={() => {}}>
+        <Form onSubmit={this.handleSubmit}>
           <input
             type="text"
             placeholder="Adicionar repositório"
             value={newRepo}
             onChange={this.handleInputChange}
           />
-          <SubmitButton onSubmit={this.handleSubmit}>
-            <FaPlus color="#fff" size={14} />
+          <SubmitButton loading={loading}>
+            {loading ? (
+              <FaSpinner color="#fff" size={14} />
+            ) : (
+              <FaPlus color="#fff" size={14} />
+            )}
           </SubmitButton>
         </Form>
+        <List>
+          {repositories.map((repository) => (
+            <li key={repository.name}>
+              <span>{repository.name}</span>
+              <Link to={`/repository/${encodeURIComponent(repository.name)}`}>
+                Detalhes
+              </Link>
+            </li>
+          ))}
+        </List>
       </Container>
     );
   }

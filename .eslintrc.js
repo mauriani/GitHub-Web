@@ -29,5 +29,8 @@ module.exports = {
     'arrow-body-style': 0,
     'import/default': 2,
     camelcase: 'off',
+    'no-unused-vars': 'off',
+    'react/no-unused-state': 'off',
+    'react/self-closing-comp': 'off',
   },
 };
