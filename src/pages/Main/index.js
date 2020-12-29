@@ -14,6 +14,7 @@ export default class Main extends Component {
       newRepo: '',
       repositories: [],
       loading: false,
+      error: null,
     };
   }
 
@@ -38,7 +39,7 @@ export default class Main extends Component {
   }
 
   handleInputChange = (e) => {
-    this.setState({ newRepo: e.target.value });
+    this.setState({ newRepo: e.target.value, error: null });
   };
 
   // como o metodo pode demorar um pouco, adicionamos o async e await
@@ -47,25 +48,50 @@ export default class Main extends Component {
 
     this.setState({
       loading: true,
+      error: false,
     });
 
-    const { newRepo, repositories } = this.state;
+    try {
+      const { newRepo, repositories } = this.state;
 
-    const response = await api.get(`/repos/${newRepo}`);
-    const data = {
-      name: response.data.full_name,
-    };
-    this.setState({
-      // copio tudo que tem nela e adiciono o novo data, ou seja ele mantem a  listagem atual e adiciona o nova informação
-      // nesse caso usamos o conceito de imutabilidade do react (criando um novo vetor)
-      repositories: [...repositories, data],
-      newRepo: '',
-      loading: false,
-    });
+      if (newRepo === '') {
+        throw 'Você precisa informar o nome de um Repositório!';
+      }
+
+      const duplicate = repositories.find(
+        (element) => element.name === newRepo
+      );
+
+      if (duplicate) {
+        throw 'Esse repositório não pode ser usado pois o mesmo já foi cadastrado !';
+      }
+
+      const response = await api.get(`/repos/${newRepo}`);
+      const data = {
+        name: response.data.full_name,
+      };
+      this.setState({
+        // copio tudo que tem nela e adiciono o novo data, ou seja ele mantem a  listagem atual e adiciona o nova informação
+        // nesse caso usamos o conceito de imutabilidade do react (criando um novo vetor)
+        repositories: [...repositories, data],
+        newRepo: '',
+      });
+    } catch (error) {
+      alert(error);
+      this.setState({
+        error: true,
+      });
+    } finally {
+      this.setState({
+        loading: false,
+      });
+    }
   };
 
   render() {
-    const { newRepo, loading, repositories } = this.state;
+    const { newRepo, loading, repositories, error } = this.state;
+
+    console.log(error);
 
     return (
       <Container>
@@ -73,7 +99,7 @@ export default class Main extends Component {
           <FaGithubAlt />
           Repositórios
         </h1>
-        <Form onSubmit={this.handleSubmit}>
+        <Form onSubmit={this.handleSubmit} error={error}>
           <input
             type="text"
             placeholder="Adicionar repositório"
@@ -88,6 +114,7 @@ export default class Main extends Component {
             )}
           </SubmitButton>
         </Form>
+
         <List>
           {repositories.map((repository) => (
             <li key={repository.name}>

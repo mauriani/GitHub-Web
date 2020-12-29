@@ -32,5 +32,7 @@ module.exports = {
     'no-unused-vars': 'off',
     'react/no-unused-state': 'off',
     'react/self-closing-comp': 'off',
+    'no-alert': 'off',
+    'no-throw-literal': 'off',
   },
 };
